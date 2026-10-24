@@ -24,6 +24,10 @@ interface in nine languages.
 
 ---
 
+> **Linux port (work in progress):** this fork adds a Linux platform layer
+> (hidraw + uhid virtual DualSense, no kernel drivers). See [docs/LINUX.md](docs/LINUX.md)
+> for status, build steps and how to help.
+
 ## Contents
 
 - [Stable 1.0.0 highlights](#stable-100-highlights)

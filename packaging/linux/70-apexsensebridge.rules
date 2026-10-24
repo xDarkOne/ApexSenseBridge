@@ -1,0 +1,19 @@
+# ApexSenseBridge for Linux: device access for the logged-in user.
+# Install:  sudo install -m644 70-apexsensebridge.rules /etc/udev/rules.d/
+#           sudo udevadm control --reload && sudo udevadm trigger
+# The file must sort before 73-seat-late.rules for TAG+="uaccess" to apply.
+
+# Flydigi APEX 5 / APEX 6 Pro (dongle and cable): vendor command and input interfaces.
+KERNEL=="hidraw*", ATTRS{idVendor}=="37d7", TAG+="uaccess"
+# Flydigi APEX 4 (Cypress-based receiver).
+KERNEL=="hidraw*", ATTRS{idVendor}=="04b4", ATTRS{idProduct}=="2412", TAG+="uaccess"
+
+# /dev/uhid lets the bridge create the virtual DualSense.
+# Note: uhid can create any HID device, including keyboards, so this grants
+# the active seat user the same input-injection power uinput would. Remove
+# this line and run the bridge as root if that is not acceptable.
+KERNEL=="uhid", TAG+="uaccess"
+
+# The virtual DualSense has no USB parent; let Steam and games open its
+# hidraw node like a physical pad.
+KERNEL=="hidraw*", KERNELS=="*054C:0CE6*", TAG+="uaccess"
