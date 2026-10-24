@@ -21,6 +21,7 @@ add_library(asb_core STATIC
     src/diagnostics/HidDiagnostics.cpp
     src/dualsense/DualSenseFeedback.cpp
     src/dualsense/DualSenseFirmware.cpp
+    src/dualsense/DualSenseUsbReports.cpp
     src/dualsense/DualSenseInput.cpp
     src/dualsense/VirtualDualSenseStartup.cpp
     src/dualsense/TouchpadGestureProfile.cpp
@@ -35,6 +36,7 @@ add_library(asb_core STATIC
     src/haptics/HapticProcessor.cpp
     src/platform/Apex6InputFusion.cpp
     src/platform/AudioEndpointProtection.cpp
+    src/platform/HidReportDescriptor.cpp
     src/platform/HidTransport.cpp
     src/platform/PhysicalInputSource.h
     src/platform/SessionControl.cpp
@@ -61,6 +63,21 @@ if(WIN32)
         src/platform/windows/WindowsSessionControl.cpp
     )
     target_link_libraries(asb_core PRIVATE setupapi hid cfgmgr32 ws2_32 xinput ole32)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # hidraw and uhid replace the Windows HID stack and the VIIPER/USBip
+    # virtual DualSense. The remaining platform services are still stubs; see
+    # docs/LINUX.md for the port status.
+    find_package(Threads REQUIRED)
+    target_sources(asb_core PRIVATE
+        src/platform/linux/LinuxHidTransport.cpp
+        src/platform/linux/LinuxVirtualDualSense.cpp
+        src/platform/UnsupportedAudioEndpointProtection.cpp
+        src/platform/UnsupportedXInputGamepad.cpp
+        src/platform/UnsupportedPhysicalControllerIsolation.cpp
+        src/platform/UnsupportedPhysicalInputSource.cpp
+        src/platform/UnsupportedSessionControl.cpp
+    )
+    target_link_libraries(asb_core PRIVATE Threads::Threads)
 else()
     target_sources(asb_core PRIVATE
         src/platform/UnsupportedHidTransport.cpp
@@ -192,6 +209,29 @@ if(BUILD_TESTING)
         target_compile_options(ApexSenseBridgeDiagnosticTests PRIVATE -Wall -Wextra -Wpedantic)
     endif()
     add_test(NAME hid_diagnostics COMMAND ApexSenseBridgeDiagnosticTests)
+
+    add_executable(ApexSenseBridgeDualSenseUsbReportsTests
+        tests/test_dualsense_usb_reports.cpp
+        src/dualsense/DualSenseUsbReports.cpp
+        src/dualsense/DualSenseFeedback.cpp
+        src/dualsense/DualSenseFirmware.cpp
+    )
+    target_include_directories(ApexSenseBridgeDualSenseUsbReportsTests PRIVATE src)
+    add_test(NAME dualsense_usb_reports COMMAND ApexSenseBridgeDualSenseUsbReportsTests)
+
+    add_executable(ApexSenseBridgeHidReportDescriptorTests
+        tests/test_hid_report_descriptor.cpp
+        src/platform/HidReportDescriptor.cpp
+    )
+    target_include_directories(ApexSenseBridgeHidReportDescriptorTests PRIVATE src)
+    add_test(NAME hid_report_descriptor COMMAND ApexSenseBridgeHidReportDescriptorTests)
+    if(MSVC)
+        target_compile_options(ApexSenseBridgeDualSenseUsbReportsTests PRIVATE /W4 /permissive- /EHsc)
+        target_compile_options(ApexSenseBridgeHidReportDescriptorTests PRIVATE /W4 /permissive- /EHsc)
+    else()
+        target_compile_options(ApexSenseBridgeDualSenseUsbReportsTests PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(ApexSenseBridgeHidReportDescriptorTests PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 
     add_executable(ApexSenseBridgeApex4GyroCaptureTests
         tests/test_apex4_gyro_capture.cpp

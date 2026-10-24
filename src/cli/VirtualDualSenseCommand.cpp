@@ -139,7 +139,11 @@ void printVirtualDsStats(const asb::dualsense::VirtualDualSenseStats& stats,
 
     std::cout
         << "virtual_ds_connected=" << (stats.connected ? "yes" : "no") << '\n'
+#ifdef __linux__
+        << "backend=" << stats.backendVersion << '\n'
+#else
         << "backend=VIIPER " << stats.backendVersion << '\n'
+#endif
         << "dualsense_firmware_update="
         << (firmware ? hex16(firmware->updateVersion) : "unavailable") << '\n'
         << "dualsense_firmware_current="
@@ -168,9 +172,13 @@ int commandVirtualDs(int argc, char** argv) {
     const auto preexistingDualSensePaths = snapshotDualSensePaths();
     asb::platform::VirtualDualSenseAudioEndpointProtection audioProtection;
     std::string audioProtectionError;
+    // The uhid DualSense has no audio endpoint, so there is no default-device
+    // switch to protect against on Linux.
     if (!audioProtection.capture(audioProtectionError) && !commandOptions.json) {
+#ifndef __linux__
         std::cerr << "Warning: Windows default-audio protection is unavailable: "
                   << audioProtectionError << '\n';
+#endif
     }
 
     asb::dualsense::VirtualDualSenseOptions backendOptions{};
@@ -206,7 +214,11 @@ int commandVirtualDs(int argc, char** argv) {
 
     if (!commandOptions.json) {
         const auto initialStats = virtualDualSense->stats();
+#ifdef __linux__
+        std::cout << "Virtual DualSense connected through uhid (" << initialStats.backendVersion << ").\n"
+#else
         std::cout << "Virtual DualSense connected through VIIPER " << initialStats.backendVersion << ".\n"
+#endif
                   << (firmware
                           ? "Virtual DualSense firmware " + hex16(firmware->updateVersion) +
                                 (firmware->updateVersion >= 0x0630 ? " verified.\n"

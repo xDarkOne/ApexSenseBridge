@@ -351,8 +351,10 @@ int commandBridgeTriggers(int argc, char** argv) {
     asb::platform::VirtualDualSenseAudioEndpointProtection audioProtection;
     std::string audioProtectionError;
     if (!audioProtection.capture(audioProtectionError)) {
+#ifndef __linux__
         std::cerr << "Warning: Windows default-audio protection is unavailable: "
                   << audioProtectionError << '\n';
+#endif
     }
 
     asb::haptics::HapticConfig hapticConfig{};
